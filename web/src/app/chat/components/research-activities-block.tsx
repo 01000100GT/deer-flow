@@ -277,6 +277,7 @@ function PythonToolCall({ toolCall }: { toolCall: ToolCallRuntime }) {
   const code = useMemo<string>(() => {
     return (toolCall.args as { code: string }).code;
   }, [toolCall.args]);
+  console.log("ssj __ PythonToolCall code:", code); // 打印 code ssj
   const { resolvedTheme } = useTheme();
   return (
     <section className="mt-4 pl-4">
@@ -300,7 +301,7 @@ function PythonToolCall({ toolCall }: { toolCall: ToolCallRuntime }) {
               boxShadow: "none",
             }}
           >
-            {code.trim()}
+            {(code ?? "").trim()}
           </SyntaxHighlighter>
         </div>
       </div>

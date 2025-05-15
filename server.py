@@ -23,6 +23,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run the DeerFlow API server")
     parser.add_argument(
         "--reload",
+        default=True,
         action="store_true",
         help="Enable auto-reload (default: True except on Windows)",
     )
@@ -41,7 +42,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--log-level",
         type=str,
-        default="info",
+        default="debug",
         choices=["debug", "info", "warning", "error", "critical"],
         help="Log level (default: info)",
     )
