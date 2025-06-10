@@ -15,6 +15,7 @@ from .nodes import (
     coder_node,
     human_feedback_node,
     background_investigation_node,
+    manual_plan_editor_node,  # 新增导入
 )
 
 
@@ -46,7 +47,9 @@ def _build_base_graph():
     builder.add_node("researcher", researcher_node)
     builder.add_node("coder", coder_node)
     builder.add_node("human_feedback", human_feedback_node)
+    builder.add_node("manual_plan_editor", manual_plan_editor_node)  # 新增节点
     builder.add_edge("background_investigator", "planner")
+    builder.add_edge("manual_plan_editor", "human_feedback")  # 新增边连接
     builder.add_conditional_edges(
         "research_team",
         continue_to_running_research_team,

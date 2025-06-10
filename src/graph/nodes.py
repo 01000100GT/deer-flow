@@ -128,6 +128,18 @@ def planner_node(
 
     try:
         curr_plan = json.loads(repair_json_output(full_response))
+        
+        # 为LLM生成的计划添加缺失的必需字段
+        from src.prompts.planner_model import StepType
+        if "steps" in curr_plan:
+            for step in curr_plan["steps"]:
+                # 如果缺少step_type字段，设置默认值
+                if "step_type" not in step:
+                    step["step_type"] = StepType.RESEARCH.value
+                # 如果缺少need_search字段，设置默认值
+                if "need_search" not in step:
+                    step["need_search"] = True
+                    
     except json.JSONDecodeError:
         logger.warning("Planner response is not a valid JSON")
         if plan_iterations > 0:
@@ -155,30 +167,38 @@ def planner_node(
 
 def human_feedback_node(
     state,
-) -> Command[Literal["planner", "research_team", "reporter", "__end__"]]:
+) -> Command[Literal["planner", "research_team", "reporter", "manual_plan_editor", "__end__"]]:
     current_plan = state.get("current_plan", "")
-    # check if the plan is auto accepted
+    # 检查是否是自动接受计划
     auto_accepted_plan = state.get("auto_accepted_plan", False)
     if not auto_accepted_plan:
         feedback = interrupt("Please Review the Plan.")
+        feedback_str = str(feedback)
 
-        # if the feedback is not accepted, return the planner node
-        if feedback and str(feedback).upper().startswith("[EDIT_PLAN]"):
+        # 检查是否为系统自动编辑
+        if feedback_str.strip().upper().startswith("[EDIT_PLAN]"):
             return Command(
-                update={
-                    "messages": [
-                        HumanMessage(content=feedback, name="feedback"),
-                    ],
-                },
+                update={"messages": [HumanMessage(content=feedback, name="feedback")]},
                 goto="planner",
             )
-        elif feedback and str(feedback).upper().startswith("[ACCEPTED]"):
+        # 检查是否为手工编辑提交
+        elif "[MANUAL_EDIT]" in feedback_str:
+            return Command(
+                update={"messages": [HumanMessage(content=feedback, name="feedback")]},
+                goto="manual_plan_editor",
+            )
+        # 检查是否接受计划
+        elif feedback_str.strip().upper().startswith("[ACCEPTED]"):
             logger.info("Plan is accepted by user.")
+        # 其他不支持的反馈类型
         else:
+            # 允许空反馈，直接重新显示计划和按钮
+            if feedback is None or feedback_str == '':
+                return Command(goto="human_feedback")
             raise TypeError(f"Interrupt value of {feedback} is not supported.")
 
-    # if the plan is accepted, run the following node
-    plan_iterations = state["plan_iterations"] if state.get("plan_iterations", 0) else 0
+    # 如果计划被接受，则继续执行后续节点
+    plan_iterations = state.get("plan_iterations", 0)
     goto = "research_team"
     try:
         current_plan = repair_json_output(current_plan)
@@ -186,6 +206,18 @@ def human_feedback_node(
         plan_iterations += 1
         # parse the plan
         new_plan = json.loads(current_plan)
+        
+        # 为计划添加缺失的必需字段
+        from src.prompts.planner_model import StepType
+        if "steps" in new_plan:
+            for step in new_plan["steps"]:
+                # 如果缺少step_type字段，设置默认值
+                if "step_type" not in step:
+                    step["step_type"] = StepType.RESEARCH.value
+                # 如果缺少need_search字段，设置默认值
+                if "need_search" not in step:
+                    step["need_search"] = True
+        
         if new_plan["has_enough_context"]:
             goto = "reporter"
     except json.JSONDecodeError:
@@ -494,3 +526,66 @@ async def coder_node(
         "coder",
         [python_repl_tool],
     )
+
+
+def manual_plan_editor_node(
+    state,
+) -> Command[Literal["human_feedback", "research_team"]]:
+    """处理手工编辑的计划"""
+    logger.info("Manual plan editor node is running.")
+    
+    messages = state.get("messages", [])
+    if not messages:
+        return Command(goto="human_feedback")
+
+    last_message = messages[-1]
+    if not (hasattr(last_message, 'content') and last_message.content):
+        return Command(goto="human_feedback")
+
+    content = last_message.content
+    if "[MANUAL_EDIT]" not in content:
+        return Command(goto="human_feedback")
+
+    try:
+        # 使用正则表达式从复杂字符串中提取核心的JSON负载
+        import json
+        import re
+        from src.prompts.planner_model import Plan, StepType
+
+        match = re.search(r'\[MANUAL_EDIT\]\s*({.*})', content, re.DOTALL)
+        if not match:
+            raise ValueError("Could not find [MANUAL_EDIT] JSON payload in the content")
+
+        plan_json = match.group(1)
+        edited_plan_data = json.loads(plan_json)
+        
+        # 为每个步骤添加缺失的必需字段，以确保验证通过
+        if "steps" in edited_plan_data:
+            for step in edited_plan_data["steps"]:
+                if "step_type" not in step:
+                    step["step_type"] = StepType.RESEARCH.value
+                if "need_search" not in step:
+                    step["need_search"] = True
+        
+        # 为计划本身添加缺失的必需字段
+        if "locale" not in edited_plan_data:
+            edited_plan_data["locale"] = state.get("locale", "zh-CN")
+        if "has_enough_context" not in edited_plan_data:
+            edited_plan_data["has_enough_context"] = False
+        
+        edited_plan = Plan.model_validate(edited_plan_data)
+        
+        logger.info(f"Plan has been manually edited: {edited_plan.title}")
+        return Command(
+            update={
+                "current_plan": edited_plan,
+                "messages": [
+                    AIMessage(content=f"Plan has been manually edited: {edited_plan.title}", name="manual_plan_editor")
+                ],
+            },
+            goto="human_feedback",
+        )
+    except (json.JSONDecodeError, ValueError, Exception) as e:
+        logger.error(f"Failed to parse manually edited plan: {e}")
+        # 如果解析失败，返回到人工反馈节点，让用户可以重试
+        return Command(goto="human_feedback")

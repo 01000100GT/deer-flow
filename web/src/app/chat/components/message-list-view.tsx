@@ -4,7 +4,7 @@
 import { LoadingOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
 import { Download, Headphones } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { LoadingAnimation } from "~/components/deer-flow/loading-animation";
 import { Markdown } from "~/components/deer-flow/markdown";
@@ -313,6 +313,13 @@ function PlanCard({
   ) => void;
   waitForFeedback?: boolean;
 }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedPlan, setEditedPlan] = useState<{
+    title?: string;
+    thought?: string;
+    steps?: { title?: string; description?: string }[];
+  }>({});
+
   const plan = useMemo<{
     title?: string;
     thought?: string;
@@ -320,6 +327,11 @@ function PlanCard({
   }>(() => {
     return parseJSON(message.content ?? "", {});
   }, [message.content]);
+
+  // 初始化编辑状态
+  useEffect(() => {
+    setEditedPlan(plan);
+  }, [plan]);
   const handleAccept = useCallback(async () => {
     if (onSendMessage) {
       onSendMessage(
@@ -330,65 +342,154 @@ function PlanCard({
       );
     }
   }, [onSendMessage]);
+
+  const handleSaveEditedPlan = useCallback(async () => {
+    if (onSendMessage) {
+      const planJson = JSON.stringify(editedPlan);
+      onSendMessage(
+        `计划已手工修改完成`,
+        {
+          interruptFeedback: `[MANUAL_EDIT] ${planJson}`,
+        },
+      );
+      setIsEditing(false);
+    }
+  }, [onSendMessage, editedPlan]);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditedPlan(plan);
+    setIsEditing(false);
+  }, [plan]);
   return (
     <Card className={cn("w-full", className)}>
       <CardHeader>
         <CardTitle>
-          <Markdown animated>
-            {`### ${
-              plan.title !== undefined && plan.title !== ""
-                ? plan.title
-                : "Deep Research"
-            }`}
-          </Markdown>
+          {isEditing ? (
+            <input
+              type="text"
+              value={editedPlan.title || ""}
+              onChange={(e) => setEditedPlan(prev => ({ ...prev, title: e.target.value }))}
+              className="w-full p-2 border rounded"
+              placeholder="计划标题"
+            />
+          ) : (
+            <Markdown animated>
+              {`### ${
+                plan.title !== undefined && plan.title !== ""
+                  ? plan.title
+                  : "Deep Research"
+              }`}
+            </Markdown>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Markdown className="opacity-80" animated>
-          {plan.thought}
-        </Markdown>
-        {plan.steps && (
-          <ul className="my-2 flex list-decimal flex-col gap-4 border-l-[2px] pl-8">
-            {plan.steps.map((step, i) => (
-              <li key={`step-${i}`}>
-                <h3 className="mb text-lg font-medium">
-                  <Markdown animated>{step.title}</Markdown>
-                </h3>
-                <div className="text-muted-foreground text-sm">
-                  <Markdown animated>{step.description}</Markdown>
+        {isEditing ? (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">思路描述</label>
+              <textarea
+                value={editedPlan.thought || ""}
+                onChange={(e) => setEditedPlan(prev => ({ ...prev, thought: e.target.value }))}
+                className="w-full p-2 border rounded h-24"
+                placeholder="计划思路"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">执行步骤</label>
+              {editedPlan.steps?.map((step, i) => (
+                <div key={i} className="mb-4 p-3 border rounded">
+                  <input
+                    type="text"
+                    value={step.title || ""}
+                    onChange={(e) => {
+                      const newSteps = [...(editedPlan.steps || [])];
+                      newSteps[i] = { ...newSteps[i], title: e.target.value };
+                      setEditedPlan(prev => ({ ...prev, steps: newSteps }));
+                    }}
+                    className="w-full p-2 border rounded mb-2"
+                    placeholder={`步骤 ${i + 1} 标题`}
+                  />
+                  <textarea
+                    value={step.description || ""}
+                    onChange={(e) => {
+                      const newSteps = [...(editedPlan.steps || [])];
+                      newSteps[i] = { ...newSteps[i], description: e.target.value };
+                      setEditedPlan(prev => ({ ...prev, steps: newSteps }));
+                    }}
+                    className="w-full p-2 border rounded h-20"
+                    placeholder={`步骤 ${i + 1} 描述`}
+                  />
                 </div>
-              </li>
-            ))}
-          </ul>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <>
+            <Markdown className="opacity-80" animated>
+              {plan.thought}
+            </Markdown>
+            {plan.steps && (
+              <ul className="my-2 flex list-decimal flex-col gap-4 border-l-[2px] pl-8">
+                {plan.steps.map((step, i) => (
+                  <li key={`step-${i}`}>
+                    <h3 className="mb text-lg font-medium">
+                      <Markdown animated>{step.title}</Markdown>
+                    </h3>
+                    <div className="text-muted-foreground text-sm">
+                      <Markdown animated>{step.description}</Markdown>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
         )}
       </CardContent>
       <CardFooter className="flex justify-end">
-        {!message.isStreaming && interruptMessage?.options?.length && (
-          <motion.div
-            className="flex gap-2"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.3 }}
-          >
-            {interruptMessage?.options.map((option) => (
-              <Button
-                key={option.value}
-                variant={option.value === "accepted" ? "default" : "outline"}
-                disabled={!waitForFeedback}
-                onClick={() => {
-                  if (option.value === "accepted") {
-                    void handleAccept();
-                  } else {
-                    onFeedback?.({
-                      option,
-                    });
-                  }
-                }}
-              >
-                {option.text}
-              </Button>
-            ))}
-          </motion.div>
+        {isEditing ? (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleCancelEdit}>
+              取消
+            </Button>
+            <Button onClick={handleSaveEditedPlan}>
+              保存修改
+            </Button>
+          </div>
+        ) : (
+          !message.isStreaming && interruptMessage?.options?.length && (
+            <motion.div
+              className="flex gap-2"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.3 }}
+            >
+              {interruptMessage?.options.map((option) => (
+                <Button
+                  key={option.value}
+                  variant={option.value === "accepted" ? "default" : "outline"}
+                  disabled={!waitForFeedback}
+                  onClick={() => {
+                    if (option.value === "accepted") {
+                      void handleAccept();
+                    } else if (option.value === "manual_edit_plan") {
+                      setIsEditing(true);
+                    } else if (option.value === "auto_edit_plan") {
+                      onFeedback?.({
+                        option: { ...option, value: "edit_plan" },
+                      });
+                    } else {
+                      onFeedback?.({
+                        option,
+                      });
+                    }
+                  }}
+                >
+                  {option.text}
+                </Button>
+              ))}
+            </motion.div>
+          )
         )}
       </CardFooter>
     </Card>
