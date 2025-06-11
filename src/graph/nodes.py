@@ -31,6 +31,8 @@ from src.utils.json_utils import repair_json_output
 from .types import State
 from ..config import SELECTED_SEARCH_ENGINE, SearchEngine
 
+from uuid import uuid4
+
 logger = logging.getLogger(__name__)
 
 
@@ -103,22 +105,18 @@ def planner_node(
             }
         ]
 
-    if AGENT_LLM_MAP["planner"] == "basic":
-        llm = get_llm_by_type(AGENT_LLM_MAP["planner"]).with_structured_output(
-            Plan,
-            method="json_mode",
-        )
-    else:
-        llm = get_llm_by_type(AGENT_LLM_MAP["planner"])
+    # 修改：不再需要为basic planner特殊处理结构化输出
+    llm = get_llm_by_type(AGENT_LLM_MAP["planner"])
 
     # if the plan iterations is greater than the max plan iterations, return the reporter node
     if plan_iterations >= configurable.max_plan_iterations:
         return Command(goto="reporter")
 
     full_response = ""
+    # 修改：统一处理llm响应，先获取原始文本
     if AGENT_LLM_MAP["planner"] == "basic":
         response = llm.invoke(messages)
-        full_response = response.model_dump_json(indent=4, exclude_none=True)
+        full_response = response.content
     else:
         response = llm.stream(messages)
         for chunk in response:
@@ -128,9 +126,10 @@ def planner_node(
 
     try:
         curr_plan = json.loads(repair_json_output(full_response))
-        
+
         # 为LLM生成的计划添加缺失的必需字段
         from src.prompts.planner_model import StepType
+
         if "steps" in curr_plan:
             for step in curr_plan["steps"]:
                 # 如果缺少step_type字段，设置默认值
@@ -139,7 +138,7 @@ def planner_node(
                 # 如果缺少need_search字段，设置默认值
                 if "need_search" not in step:
                     step["need_search"] = True
-                    
+
     except json.JSONDecodeError:
         logger.warning("Planner response is not a valid JSON")
         if plan_iterations > 0:
@@ -151,14 +150,12 @@ def planner_node(
         new_plan = Plan.model_validate(curr_plan)
         return Command(
             update={
-                "messages": [AIMessage(content=full_response, name="planner")],
                 "current_plan": new_plan,
             },
             goto="reporter",
         )
     return Command(
         update={
-            "messages": [AIMessage(content=full_response, name="planner")],
             "current_plan": full_response,
         },
         goto="human_feedback",
@@ -167,33 +164,79 @@ def planner_node(
 
 def human_feedback_node(
     state,
-) -> Command[Literal["planner", "research_team", "reporter", "manual_plan_editor", "__end__"]]:
+) -> Command[
+    Literal["planner", "research_team", "reporter", "manual_plan_editor", "__end__"]
+]:
+    logger.info("--- HUMAN_FEEDBACK [START] ---")
     current_plan = state.get("current_plan", "")
-    # 检查是否是自动接受计划
     auto_accepted_plan = state.get("auto_accepted_plan", False)
+    # 注释: 详细打印进入节点时current_plan的状态
+    logger.info(f"--- HUMAN_FEEDBACK: current_plan on entry: {type(current_plan)} ---")
+    if isinstance(current_plan, str):
+        logger.info(current_plan[:1000])
+    else:
+        # 导入Plan以在日志记录中使用
+        from src.prompts.planner_model import Plan
+
+        if isinstance(current_plan, Plan):
+            logger.info(current_plan.model_dump_json(indent=2))
+        else:
+            logger.info(current_plan)
+
     if not auto_accepted_plan:
-        feedback = interrupt("Please Review the Plan.")
+        # # 注释: 这里是关键，我们必须调用interrupt()来暂停执行并等待前端反馈。
+        # feedback = interrupt("Please Review the Plan.")
+        # feedback_str = str(feedback)
+        # 注释：获取状态中最新的消息，中断将附加到此消息上
+        last_message = state.get("messages", [{}])[-1]
+        last_message_id = last_message.id if hasattr(last_message, "id") else None
+
+        # 注释：这里是关键，我们必须调用interrupt()来暂停执行并等待前端反馈。
+        # 注释：通过指定ns（命名空间），确保中断附加到最新的消息上。
+        feedback = interrupt(
+            "Please Review the Plan."
+        )
         feedback_str = str(feedback)
+        # 注释: 详细打印收到的中断反馈
+        logger.info(
+            f"--- HUMAN_FEEDBACK: Received feedback content: {feedback_str[:500]}"
+        )
 
         # 检查是否为系统自动编辑
         if feedback_str.strip().upper().startswith("[EDIT_PLAN]"):
+            logger.info(
+                "--- HUMAN_FEEDBACK [DECISION]: Detected [EDIT_PLAN], going to planner. ---"
+            )
             return Command(
-                update={"messages": [HumanMessage(content=feedback, name="feedback")]},
+                update={
+                    "messages": [HumanMessage(content=feedback_str, name="feedback")]
+                },
                 goto="planner",
             )
         # 检查是否为手工编辑提交
         elif "[MANUAL_EDIT]" in feedback_str:
+            logger.info(
+                "--- HUMAN_FEEDBACK [DECISION]: Detected [MANUAL_EDIT], going to manual_plan_editor. ---"
+            )
             return Command(
-                update={"messages": [HumanMessage(content=feedback, name="feedback")]},
+                update={
+                    "messages": [HumanMessage(content=feedback_str, name="feedback")]
+                },
                 goto="manual_plan_editor",
             )
         # 检查是否接受计划
         elif feedback_str.strip().upper().startswith("[ACCEPTED]"):
+            logger.info(
+                "--- HUMAN_FEEDBACK [DECISION]: Detected [ACCEPTED], proceeding. ---"
+            )
             logger.info("Plan is accepted by user.")
         # 其他不支持的反馈类型
         else:
             # 允许空反馈，直接重新显示计划和按钮
-            if feedback is None or feedback_str == '':
+            if feedback is None or feedback_str == "":
+                logger.info(
+                    "--- HUMAN_FEEDBACK [DECISION]: Feedback is empty, returning to human_feedback. ---"
+                )
                 return Command(goto="human_feedback")
             raise TypeError(f"Interrupt value of {feedback} is not supported.")
 
@@ -206,9 +249,10 @@ def human_feedback_node(
         plan_iterations += 1
         # parse the plan
         new_plan = json.loads(current_plan)
-        
+
         # 为计划添加缺失的必需字段
         from src.prompts.planner_model import StepType
+
         if "steps" in new_plan:
             for step in new_plan["steps"]:
                 # 如果缺少step_type字段，设置默认值
@@ -217,7 +261,7 @@ def human_feedback_node(
                 # 如果缺少need_search字段，设置默认值
                 if "need_search" not in step:
                     step["need_search"] = True
-        
+
         if new_plan["has_enough_context"]:
             goto = "reporter"
     except json.JSONDecodeError:
@@ -227,6 +271,7 @@ def human_feedback_node(
         else:
             return Command(goto="__end__")
 
+    logger.info(f"--- HUMAN_FEEDBACK [END]: Returning with goto: {goto} ---")
     return Command(
         update={
             "current_plan": Plan.model_validate(new_plan),
@@ -250,6 +295,12 @@ def coordinator_node(
         .invoke(messages)
     )
     logger.debug(f"Current state messages: {state['messages']}")
+
+    # 检查响应是否包含工具调用
+    if response.tool_calls:
+        # 如果模型调用了工具，我们不希望包含任何文本内容。
+        # 因此，在框架将其添加到状态之前，我们强制清空文本。
+        response.content = ""
 
     goto = "__end__"
     locale = state.get("locale", "en-US")  # Default locale if not specified
@@ -532,18 +583,26 @@ def manual_plan_editor_node(
     state,
 ) -> Command[Literal["human_feedback", "research_team"]]:
     """处理手工编辑的计划"""
-    logger.info("Manual plan editor node is running.")
-    
+    logger.info("--- MANUAL_PLAN_EDITOR [START] ---")
+
     messages = state.get("messages", [])
     if not messages:
+        logger.warning("--- MANUAL_PLAN_EDITOR [EXIT]: No messages found. ---")
         return Command(goto="human_feedback")
 
     last_message = messages[-1]
-    if not (hasattr(last_message, 'content') and last_message.content):
+    if not (hasattr(last_message, "content") and last_message.content):
+        logger.warning(
+            "--- MANUAL_PLAN_EDITOR [EXIT]: Last message has no content. ---"
+        )
         return Command(goto="human_feedback")
 
     content = last_message.content
+    logger.info(f"--- MANUAL_PLAN_EDITOR: Parsing content: {content[:500]} ---")
     if "[MANUAL_EDIT]" not in content:
+        logger.warning(
+            "--- MANUAL_PLAN_EDITOR [EXIT]: [MANUAL_EDIT] not in content. ---"
+        )
         return Command(goto="human_feedback")
 
     try:
@@ -552,13 +611,13 @@ def manual_plan_editor_node(
         import re
         from src.prompts.planner_model import Plan, StepType
 
-        match = re.search(r'\[MANUAL_EDIT\]\s*({.*})', content, re.DOTALL)
+        match = re.search(r"\[MANUAL_EDIT\]\s*({.*})", content, re.DOTALL)
         if not match:
             raise ValueError("Could not find [MANUAL_EDIT] JSON payload in the content")
 
         plan_json = match.group(1)
         edited_plan_data = json.loads(plan_json)
-        
+
         # 为每个步骤添加缺失的必需字段，以确保验证通过
         if "steps" in edited_plan_data:
             for step in edited_plan_data["steps"]:
@@ -566,26 +625,58 @@ def manual_plan_editor_node(
                     step["step_type"] = StepType.RESEARCH.value
                 if "need_search" not in step:
                     step["need_search"] = True
-        
+
         # 为计划本身添加缺失的必需字段
         if "locale" not in edited_plan_data:
             edited_plan_data["locale"] = state.get("locale", "zh-CN")
         if "has_enough_context" not in edited_plan_data:
             edited_plan_data["has_enough_context"] = False
-        
+
         edited_plan = Plan.model_validate(edited_plan_data)
-        
-        logger.info(f"Plan has been manually edited: {edited_plan.title}")
-        return Command(
+
+        # 将Pydantic模型转换为JSON字符串
+        edited_plan_json = edited_plan.model_dump_json(indent=4, exclude_none=True)
+
+        logger.info(
+            f"--- MANUAL_PLAN_EDITOR: Plan parsed and validated successfully. Title: {edited_plan.title} ---"
+        )
+
+        # command_to_return = Command(
+        #     update={
+        #         "current_plan": edited_plan,
+        #         "messages": [
+        #             AIMessage(
+        #                 content=edited_plan_json,
+        #                 name="manual_plan_editor",
+        #                 response_metadata={"finish_reason": "stop"},
+        #             )
+        #         ],
+        #     },
+        #     goto="human_feedback",
+        # )
+        new_message_id = f"manual_plan_editor:{uuid4()}"
+
+        command_to_return = Command(
             update={
                 "current_plan": edited_plan,
                 "messages": [
-                    AIMessage(content=f"Plan has been manually edited: {edited_plan.title}", name="manual_plan_editor")
+                    AIMessage(
+                        id=new_message_id,  # 注释：为消息明确分配ID
+                        content=edited_plan_json,
+                        name="manual_plan_editor",
+                        response_metadata={"finish_reason": "stop"},
+                    )
                 ],
             },
             goto="human_feedback",
         )
+
+        logger.info(
+            f"--- MANUAL_PLAN_EDITOR [END]: Returning command to update plan and goto human_feedback. ---"
+        )
+        return command_to_return
     except (json.JSONDecodeError, ValueError, Exception) as e:
         logger.error(f"Failed to parse manually edited plan: {e}")
         # 如果解析失败，返回到人工反馈节点，让用户可以重试
+        logger.warning("--- MANUAL_PLAN_EDITOR [EXIT]: Error parsing plan. ---")
         return Command(goto="human_feedback")

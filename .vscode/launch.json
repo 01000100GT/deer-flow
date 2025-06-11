@@ -79,14 +79,15 @@
         },
         {
             "name": "DeerFlow Frontend",
-            "type": "node",
+            "type": "node-terminal",
             "request": "launch",
             "cwd": "${workspaceFolder}/web",
-            "runtimeExecutable": "/Users/sss/.nvm/versions/node/v22.14.0/bin/pnpm",
-            "runtimeArgs": [
-                "dev"
-            ],
-            "console": "integratedTerminal"
+            "command": "/Users/sss/.nvm/versions/node/v22.14.0/bin/pnpm dev",
+            "serverReadyAction": {
+                "pattern": "- Local:.*(https?://localhost:3000)",
+                "uriFormat": "%s",
+                "action": "debugWithChrome"
+            }
         }
     ]
 }

@@ -11,7 +11,7 @@ from uuid import uuid4
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, StreamingResponse
-from langchain_core.messages import AIMessageChunk, ToolMessage, BaseMessage
+from langchain_core.messages import AIMessage, AIMessageChunk, ToolMessage, BaseMessage
 from langgraph.types import Command
 
 from src.config.report_style import ReportStyle
@@ -128,6 +128,8 @@ async def _astream_workflow_generator(
         stream_mode=["messages", "updates"],
         subgraphs=True,
     ):
+        # 注释: 在发送给前端之前，记录每一个事件的类型和数据，这是验证数据流的最终关卡。
+        logger.info(f"--- STREAMING_TO_FRONTEND --- Event Type: {agent}, Event Data: {str(event_data)[:1000]}")
         if isinstance(event_data, dict):
             if "__interrupt__" in event_data:
                 yield _make_event(
@@ -145,7 +147,31 @@ async def _astream_workflow_generator(
                         ],
                     },
                 )
+            
+            # 关键修复：正确处理来自任何节点的、非流式的完整消息更新
+            for node_name, node_data in event_data.items():
+                # 检查节点数据是否是包含消息的字典
+                if isinstance(node_data, dict) and "messages" in node_data:
+                    for message in node_data["messages"]:
+                        # 我们只关心AIMessage，并且它不能是流式块
+                        if not isinstance(message, AIMessage) or isinstance(message, AIMessageChunk):
+                            continue
+                        
+                        event_stream_message: dict[str, any] = {
+                            "thread_id": thread_id,
+                            "agent": message.name or "unknown",
+                            "id": message.id,
+                            "role": "assistant",
+                            "content": message.content,
+                        }
+                        if message.response_metadata.get("finish_reason"):
+                            event_stream_message["finish_reason"] = message.response_metadata.get("finish_reason")
+                        
+                        # 将这个完整的消息作为'message_chunk'事件发送给前端
+                        yield _make_event("message_chunk", event_stream_message)
+
             continue
+
         message_chunk, message_metadata = cast(
             tuple[BaseMessage, dict[str, any]], event_data
         )

@@ -45,7 +45,7 @@ export function MessageListView({
   className?: string;
   onFeedback?: (feedback: { option: Option }) => void;
   onSendMessage?: (
-    message: string,
+    message?: string,
     options?: { interruptFeedback?: string },
   ) => void;
 }) {
@@ -117,12 +117,21 @@ function MessageListItem({
   onFeedback?: (feedback: { option: Option }) => void;
   interruptMessage?: Message | null;
   onSendMessage?: (
-    message: string,
+    message?: string,
     options?: { interruptFeedback?: string },
   ) => void;
   onToggleResearch?: () => void;
 }) {
   const message = useMessage(messageId);
+  console.log(
+    "--- [FE LOG] File: message-list-view.tsx, Component: MessageListItem, Action: Rendering Message ---",
+    {
+      id: message?.id,
+      agent: message?.agent,
+      content: message?.content?.substring(0, 100) + "...",
+    },
+  );
+
   const researchIds = useStore((state) => state.researchIds);
   const startOfResearch = useMemo(() => {
     return researchIds.includes(messageId);
@@ -132,11 +141,12 @@ function MessageListItem({
       message.role === "user" ||
       message.agent === "coordinator" ||
       message.agent === "planner" ||
+      message.agent === "manual_plan_editor" ||
       message.agent === "podcast" ||
       startOfResearch
     ) {
       let content: React.ReactNode;
-      if (message.agent === "planner") {
+      if (message.agent === "planner" || message.agent === "manual_plan_editor") {
         content = (
           <div className="w-full px-4">
             <PlanCard
@@ -308,7 +318,7 @@ function PlanCard({
   interruptMessage?: Message | null;
   onFeedback?: (feedback: { option: Option }) => void;
   onSendMessage?: (
-    message: string,
+    message?: string,
     options?: { interruptFeedback?: string },
   ) => void;
   waitForFeedback?: boolean;
@@ -346,8 +356,12 @@ function PlanCard({
   const handleSaveEditedPlan = useCallback(async () => {
     if (onSendMessage) {
       const planJson = JSON.stringify(editedPlan);
+      console.log(
+        "--- [FE LOG] File: message-list-view.tsx, Method: handleSaveEditedPlan, Action: Sending Manual Edit ---",
+        `[MANUAL_EDIT] ${planJson}`,
+      );
       onSendMessage(
-        `计划已手工修改完成`,
+        undefined,
         {
           interruptFeedback: `[MANUAL_EDIT] ${planJson}`,
         },

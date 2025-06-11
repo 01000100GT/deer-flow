@@ -9,6 +9,7 @@ export interface Message {
   agent?:
     | "coordinator"
     | "planner"
+    | "manual_plan_editor"
     | "researcher"
     | "coder"
     | "reporter"
