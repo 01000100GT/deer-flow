@@ -193,15 +193,13 @@ def human_feedback_node(
 
         # 注释：这里是关键，我们必须调用interrupt()来暂停执行并等待前端反馈。
         # 注释：通过指定ns（命名空间），确保中断附加到最新的消息上。
-        feedback = interrupt(
-            "Please Review the Plan."
-        )
+        feedback = interrupt("Please Review the Plan.")
         feedback_str = str(feedback)
         # 注释: 详细打印收到的中断反馈
         logger.info(
             f"--- HUMAN_FEEDBACK: Received feedback content: {feedback_str[:500]}"
         )
-
+        logger.info(f"检查 feedback_str 的内容是: {feedback_str} ---")
         # 检查是否为系统自动编辑
         if feedback_str.strip().upper().startswith("[EDIT_PLAN]"):
             logger.info(
@@ -244,15 +242,28 @@ def human_feedback_node(
     plan_iterations = state.get("plan_iterations", 0)
     goto = "research_team"
     try:
-        current_plan = repair_json_output(current_plan)
+        # 注释：导入Plan和StepType用于类型检查和数据处理。
+        from src.prompts.planner_model import Plan, StepType
+
+        new_plan_data = {}
+        # 注释：在处理之前，检查current_plan的类型。这是为了修复当计划已被解析为Plan对象时发生崩溃的错误。
+        if isinstance(current_plan, str):
+            # 注释：如果current_plan是一个字符串（例如，来自planner的初始原始输出），则修复并解析它。
+            repaired_plan_str = repair_json_output(current_plan)
+            new_plan_data = json.loads(repaired_plan_str)
+        elif isinstance(current_plan, Plan):
+            # 注释：如果current_plan已经是一个Plan对象（例如，在手动编辑之后），我们直接将其转换为字典以进行进一步处理。
+            new_plan_data = current_plan.model_dump()
+        else:
+            # 注释：如果current_plan是任何其他意外类型，则引发类型错误。
+            raise TypeError(f"Unsupported type for current_plan: {type(current_plan)}")
+
         # increment the plan iterations
         plan_iterations += 1
         # parse the plan
-        new_plan = json.loads(current_plan)
+        new_plan = new_plan_data
 
         # 为计划添加缺失的必需字段
-        from src.prompts.planner_model import StepType
-
         if "steps" in new_plan:
             for step in new_plan["steps"]:
                 # 如果缺少step_type字段，设置默认值
@@ -262,10 +273,10 @@ def human_feedback_node(
                 if "need_search" not in step:
                     step["need_search"] = True
 
-        if new_plan["has_enough_context"]:
+        if new_plan.get("has_enough_context"):
             goto = "reporter"
-    except json.JSONDecodeError:
-        logger.warning("Planner response is not a valid JSON")
+    except (json.JSONDecodeError, TypeError) as e:
+        logger.warning(f"Planner response is not a valid JSON or has wrong type: {e}")
         if plan_iterations > 0:
             return Command(goto="reporter")
         else:
