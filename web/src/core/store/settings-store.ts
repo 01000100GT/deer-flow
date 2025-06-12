@@ -5,7 +5,8 @@ import { create } from "zustand";
 
 import type { MCPServerMetadata, SimpleMCPServerMetadata } from "../mcp";
 
-const SETTINGS_KEY = "deerflow.settings";
+const SETTINGS_KEY = "DEER-SETTINGS";
+const CURRENT_SETTINGS_VERSION = 1;
 
 const DEFAULT_SETTINGS: SettingsState = {
   general: {
@@ -47,33 +48,41 @@ export const changeSettings = (settings: SettingsState) => {
   useSettingsStore.setState(settings);
 };
 
-export const loadSettings = () => {
-  if (typeof window === "undefined") {
-    return;
-  }
+export function loadSettings(): SettingsState {
   const json = localStorage.getItem(SETTINGS_KEY);
-  if (json) {
-    const settings = JSON.parse(json);
-    for (const key in DEFAULT_SETTINGS.general) {
-      if (!(key in settings.general)) {
-        settings.general[key as keyof SettingsState["general"]] =
-          DEFAULT_SETTINGS.general[key as keyof SettingsState["general"]];
-      }
-    }
-
-    try {
-      useSettingsStore.setState(settings);
-    } catch (error) {
-      console.error(error);
-    }
+  if (!json) {
+    return DEFAULT_SETTINGS;
   }
-};
+  try {
+    const data = JSON.parse(json);
+    if (data.version !== CURRENT_SETTINGS_VERSION) {
+      console.warn(
+        `Old settings version detected (found ${data.version}, expected ${CURRENT_SETTINGS_VERSION}). Discarding old settings.`,
+      );
+      return DEFAULT_SETTINGS;
+    }
+    return { ...DEFAULT_SETTINGS, ...data.settings };
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+}
 
-export const saveSettings = () => {
-  const latestSettings = useSettingsStore.getState();
-  const json = JSON.stringify(latestSettings);
-  localStorage.setItem(SETTINGS_KEY, json);
-};
+export function saveSettings(settings: SettingsState) {
+  try {
+    const dataToStore = {
+      version: CURRENT_SETTINGS_VERSION,
+      settings: settings,
+    };
+    const json = JSON.stringify(dataToStore);
+    localStorage.setItem(SETTINGS_KEY, json);
+  } catch {
+    // Do nothing
+  }
+}
+
+useSettingsStore.subscribe((state) => {
+  saveSettings(state);
+});
 
 export const getChatStreamSettings = () => {
   let mcpSettings:
@@ -134,7 +143,7 @@ export function setReportStyle(value: "academic" | "popular_science" | "news" | 
       reportStyle: value,
     },
   }));
-  saveSettings();
+  saveSettings(useSettingsStore.getState());
 }
 
 export function setEnableBackgroundInvestigation(value: boolean) {
@@ -144,6 +153,7 @@ export function setEnableBackgroundInvestigation(value: boolean) {
       enableBackgroundInvestigation: value,
     },
   }));
-  saveSettings();
+  saveSettings(useSettingsStore.getState());
 }
+
 loadSettings();
