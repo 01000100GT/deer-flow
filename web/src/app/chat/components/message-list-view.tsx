@@ -187,7 +187,7 @@ function MessageListItem({
                 <Markdown
                   className={cn(
                     message.role === "user" &&
-                      "prose-invert not-dark:text-secondary dark:text-inherit",
+                    "prose-invert not-dark:text-secondary dark:text-inherit",
                   )}
                 >
                   {message?.content}
@@ -388,11 +388,10 @@ function PlanCard({
             />
           ) : (
             <Markdown animated>
-              {`### ${
-                plan.title !== undefined && plan.title !== ""
-                  ? plan.title
-                  : "Deep Research"
-              }`}
+              {`### ${plan.title !== undefined && plan.title !== ""
+                ? plan.title
+                : "Deep Research"
+                }`}
             </Markdown>
           )}
         </CardTitle>
@@ -411,8 +410,8 @@ function PlanCard({
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">执行步骤</label>
-              {editedPlan.steps?.map((step, i) => (
-                <div key={i} className="mb-4 p-3 border rounded">
+              {(editedPlan.steps || []).map((step, i) => (
+                <div key={i} className="mb-4 p-3 border rounded relative">
                   <input
                     type="text"
                     value={step.title || ""}
@@ -434,8 +433,35 @@ function PlanCard({
                     className="w-full p-2 border rounded h-20"
                     placeholder={`步骤 ${i + 1} 描述`}
                   />
+                  <div className="absolute top-2 right-2">
+                    <Button
+                      // 删除按钮
+                      size="sm"
+                      onClick={() => {
+                        const newSteps = [...(editedPlan.steps || [])];
+                        newSteps.splice(i, 1);
+                        setEditedPlan(prev => ({ ...prev, steps: newSteps }));
+                      }}
+                    >
+                      删除
+                    </Button>
+                  </div>
                 </div>
               ))}
+              <div className="mt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEditedPlan(prev => ({
+                      ...prev,
+                      steps: [...(prev.steps || []), { title: "", description: "" }],
+                    }));
+                  }}
+                >
+                  + 添加步骤
+                </Button>
+              </div>
             </div>
           </div>
         ) : (
