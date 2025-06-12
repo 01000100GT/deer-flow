@@ -26,3 +26,4 @@ conf.yaml
 coverage.xml
 coverage/
 .trae/
+.DS_Store

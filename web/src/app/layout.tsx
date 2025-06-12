@@ -4,7 +4,8 @@
 import "~/styles/globals.css";
 
 import { type Metadata } from "next";
-import { Geist } from "next/font/google";
+// import { Geist } from "next/font/google";
+import localFont from 'next/font/local';
 import Script from "next/script";
 
 import { ThemeProviderWrapper } from "~/components/deer-flow/theme-provider-wrapper";
@@ -19,9 +20,26 @@ export const metadata: Metadata = {
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
-const geist = Geist({
-  subsets: ["latin"],
-  variable: "--font-geist-sans",
+// const geist = Geist({
+//   subsets: ["latin"],
+//   variable: "--font-geist-sans",
+// });
+
+const geist = localFont({
+  src: [
+    {
+      path: '../../public/fonts/geist-v3-latin-regular.woff2',
+      weight: '400', // 对应常规字重
+      style: 'normal',
+    },
+    {
+      path: '../../public/fonts/geist-v3-latin-700.woff2',
+      weight: '700', // 对应粗体
+      style: 'normal',
+    },
+    // ... 在这里添加更多字重和样式的配置
+  ],
+  variable: '--font-geist', // 定义一个CSS变量，方便全局使用
 });
 
 export default function RootLayout({
