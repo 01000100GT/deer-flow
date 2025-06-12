@@ -68,3 +68,7 @@ extend-exclude = '''
 # in the root of the project.
 ^/build/
 '''
+
+[[tool.uv.index]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true

@@ -88,6 +88,18 @@
                 "uriFormat": "%s",
                 "action": "debugWithChrome"
             }
+        },
+        {
+            "name": "DeerFlow Frontend Win",
+            "type": "node-terminal",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/web",
+            "command": "pnpm dev",
+            "serverReadyAction": {
+                "pattern": "- Local:.*(https?://localhost:3000)",
+                "uriFormat": "%s",
+                "action": "debugWithEdge"
+            }
         }
     ]
 }
