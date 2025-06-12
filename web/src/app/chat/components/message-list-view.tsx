@@ -123,14 +123,14 @@ function MessageListItem({
   onToggleResearch?: () => void;
 }) {
   const message = useMessage(messageId);
-  console.log(
-    "--- [FE LOG] File: message-list-view.tsx, Component: MessageListItem, Action: Rendering Message ---",
-    {
-      id: message?.id,
-      agent: message?.agent,
-      content: message?.content?.substring(0, 100) + "...",
-    },
-  );
+  // console.log(
+  //   "--- [FE LOG] File: message-list-view.tsx, Component: MessageListItem, Action: Rendering Message ---",
+  //   {
+  //     id: message?.id,
+  //     agent: message?.agent,
+  //     content: message?.content?.substring(0, 100) + "...",
+  //   },
+  // );
 
   const researchIds = useStore((state) => state.researchIds);
   const startOfResearch = useMemo(() => {
@@ -356,10 +356,10 @@ function PlanCard({
   const handleSaveEditedPlan = useCallback(async () => {
     if (onSendMessage) {
       const planJson = JSON.stringify(editedPlan);
-      console.log(
-        "--- [FE LOG] File: message-list-view.tsx, Method: handleSaveEditedPlan, Action: Sending Manual Edit ---",
-        `[MANUAL_EDIT] ${planJson}`,
-      );
+      // console.log(
+      //   "--- [FE LOG] File: message-list-view.tsx, Method: handleSaveEditedPlan, Action: Sending Manual Edit ---",
+      //   `[MANUAL_EDIT] ${planJson}`,
+      // );
       onSendMessage(
         undefined,
         {

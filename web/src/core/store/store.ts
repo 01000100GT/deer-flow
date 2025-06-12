@@ -119,10 +119,10 @@ export async function sendMessage(
   let messageId: string | undefined;
   try {
     for await (const event of stream) {
-      console.log(
-        "--- [FE LOG] File: store.ts, Method: sendMessage, Action: Received Stream Event ---",
-        event,
-      );
+      // console.log(
+      //   "--- [FE LOG] File: store.ts, Method: sendMessage, Action: Received Stream Event ---",
+      //   event,
+      // );
       const { type, data } = event;
       messageId = data.id;
       let message: Message | undefined;
@@ -188,14 +188,14 @@ function findMessageByToolCallId(toolCallId: string) {
 }
 
 function appendMessage(message: Message) {
-  console.log(
-    "--- [FE LOG] File: store.ts, Method: appendMessage, Action: Appending new message ---",
-    {
-      id: message.id,
-      agent: message.agent,
-      content: message.content,
-    },
-  );
+  // console.log(
+  //   "--- [FE LOG] File: store.ts, Method: appendMessage, Action: Appending new message ---",
+  //   {
+  //     id: message.id,
+  //     agent: message.agent,
+  //     content: message.content,
+  //   },
+  // );
 
   if (
     message.agent === "coder" ||
@@ -213,15 +213,15 @@ function appendMessage(message: Message) {
 }
 
 function updateMessage(message: Message) {
-  console.log(
-    "--- [FE LOG] File: store.ts, Method: updateMessage, Action: Updating existing message ---",
-    {
-      id: message.id,
-      agent: message.agent,
-      isStreaming: message.isStreaming,
-      content: message.content,
-    },
-  );
+  // console.log(
+  //   "--- [FE LOG] File: store.ts, Method: updateMessage, Action: Updating existing message ---",
+  //   {
+  //     id: message.id,
+  //     agent: message.agent,
+  //     isStreaming: message.isStreaming,
+  //     content: message.content,
+  //   },
+  // );
 
   if (
     getOngoingResearchId() &&
