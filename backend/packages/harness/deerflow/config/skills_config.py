@@ -26,8 +26,14 @@ class SkillsConfig(BaseModel):
             # Use configured path (can be absolute or relative)
             path = Path(self.path)
             if not path.is_absolute():
+                import os
                 # If relative, resolve from current working directory
-                path = Path.cwd() / path
+                # Use os.environ.get("PWD") as fallback to avoid BlockingError in ASGI loop
+                try:
+                    cwd = Path.cwd()
+                except Exception:
+                    cwd = Path(os.environ.get("PWD", "."))
+                path = cwd / path
             return path.resolve()
         else:
             # Default: ../skills relative to backend directory

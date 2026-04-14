@@ -81,12 +81,17 @@ def load_agent_soul(agent_name: str | None) -> str | None:
     Returns:
         The SOUL.md content as a string, or None if the file does not exist.
     """
-    agent_dir = get_paths().agent_dir(agent_name) if agent_name else get_paths().base_dir
-    soul_path = agent_dir / SOUL_FILENAME
-    if not soul_path.exists():
-        return None
-    content = soul_path.read_text(encoding="utf-8").strip()
-    return content or None
+    import concurrent.futures
+    def _inner():
+        agent_dir = get_paths().agent_dir(agent_name) if agent_name else get_paths().base_dir
+        soul_path = agent_dir / SOUL_FILENAME
+        if not soul_path.exists():
+            return None
+        content = soul_path.read_text(encoding="utf-8").strip()
+        return content or None
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        return executor.submit(_inner).result()
 
 
 def list_custom_agents() -> list[AgentConfig]:

@@ -24,7 +24,8 @@ def setup_agent(
         description: One-line description of what the agent does.
     """
 
-    agent_name: str | None = runtime.context.get("agent_name")
+    context = getattr(runtime, "context", {}) or {} if runtime else {}
+    agent_name: str | None = context.get("agent_name")
 
     try:
         paths = get_paths()

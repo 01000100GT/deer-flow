@@ -94,22 +94,31 @@ class ExtensionsConfig(BaseModel):
                 raise FileNotFoundError(f"Extensions config file specified by environment variable `DEER_FLOW_EXTENSIONS_CONFIG_PATH` not found at {path}")
             return path
         else:
-            # Check if the extensions_config.json is in the current directory
-            path = Path(os.getcwd()) / "extensions_config.json"
+            # Avoid using os.getcwd() directly in LangGraph runtime to prevent blocking ASGI event loop
+            try:
+                # __file__ is typically an absolute path in ASGI servers.
+                # deerflow/config/extensions_config.py -> 5 levels up to backend/
+                cwd = Path(__file__).parent.parent.parent.parent.parent
+            except Exception:
+                cwd_str = os.environ.get("PWD")
+                cwd = Path(cwd_str) if cwd_str else Path(".")
+
+            # Check if the extensions_config.json is in the deduced directory
+            path = cwd / "extensions_config.json"
             if path.exists():
                 return path
 
-            # Check if the extensions_config.json is in the parent directory of CWD
-            path = Path(os.getcwd()).parent / "extensions_config.json"
+            # Check if the extensions_config.json is in the parent directory
+            path = cwd.parent / "extensions_config.json"
             if path.exists():
                 return path
 
             # Backward compatibility: check for mcp_config.json
-            path = Path(os.getcwd()) / "mcp_config.json"
+            path = cwd / "mcp_config.json"
             if path.exists():
                 return path
 
-            path = Path(os.getcwd()).parent / "mcp_config.json"
+            path = cwd.parent / "mcp_config.json"
             if path.exists():
                 return path
 

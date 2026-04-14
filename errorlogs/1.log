@@ -1,0 +1,259 @@
+2026-03-24T01:43:46.489110Z [info     ] Created run                    [langgraph_api.models.run] after_seconds=0 api_variant=local_dev assistant_id=bee7d354-5df5-5f26-a978-10ea053f620d checkpoint_id=None if_not_exists=reject langgraph_api_version=0.7.65 method=POST multitask_strategy=enqueue path=/threads/{thread_id}/runs/stream request_id=a9332a6c-ce53-41a9-8766-33e9db979e9d run_create_ms=2 run_id=019d1d83-2238-7490-995c-519f5f075c93 run_put_ms=0 stream_mode=['messages-tuple', 'values', 'updates', 'custom', 'events'] stream_resumable=True temporary=False thread_id=b144ac74-e69a-4ff2-85b8-7d1605ef9583 thread_name=MainThread
+2026-03-24T01:43:47.277418Z [info     ] Starting background run        [langgraph_api.worker] api_variant=local_dev assistant_id=bee7d354-5df5-5f26-a978-10ea053f620d graph_id=lead_agent langgraph_api_version=0.7.65 request_id=a9332a6c-ce53-41a9-8766-33e9db979e9d resumable=True run_attempt=1 run_creation_ms=2 run_id=019d1d83-2238-7490-995c-519f5f075c93 run_queue_ms=788 run_started_at=2026-03-24T01:43:47.277224+00:00 run_stream_start_ms=0 temporary=False thread_id=b144ac74-e69a-4ff2-85b8-7d1605ef9583 thread_name=ThreadPoolExecutor-1_0
+2026-03-24T01:43:47.279759Z [info     ] Create Agent(default) -> thinking_enabled: False, reasoning_effort: None, model_name: qwen35_35b, is_plan_mode: False, subagent_enabled: False, max_concurrent_subagents: 3 [deerflow.agents.lead_agent.agent] api_variant=local_dev assistant_id=bee7d354-5df5-5f26-a978-10ea053f620d graph_id=lead_agent langgraph_api_version=0.7.65 request_id=a9332a6c-ce53-41a9-8766-33e9db979e9d run_attempt=1 run_id=019d1d83-2238-7490-995c-519f5f075c93 thread_id=b144ac74-e69a-4ff2-85b8-7d1605ef9583 thread_name=MainThread
+2026-03-24T01:43:47.281240Z [info     ] Including view_image_tool for model 'qwen35_35b' (supports_vision=True) [deerflow.tools.tools] api_variant=local_dev assistant_id=bee7d354-5df5-5f26-a978-10ea053f620d graph_id=lead_agent langgraph_api_version=0.7.65 request_id=a9332a6c-ce53-41a9-8766-33e9db979e9d run_attempt=1 run_id=019d1d83-2238-7490-995c-519f5f075c93 thread_id=b144ac74-e69a-4ff2-85b8-7d1605ef9583 thread_name=MainThread
+2026-03-24T01:43:47.281828Z [info     ] Total tools loaded: 8, built-in tools: 3, MCP tools: 0 [deerflow.tools.tools] api_variant=local_dev assistant_id=bee7d354-5df5-5f26-a978-10ea053f620d graph_id=lead_agent langgraph_api_version=0.7.65 request_id=a9332a6c-ce53-41a9-8766-33e9db979e9d run_attempt=1 run_id=019d1d83-2238-7490-995c-519f5f075c93 thread_id=b144ac74-e69a-4ff2-85b8-7d1605ef9583 thread_name=MainThread
+Failed to load memory context: Blocking call to os.getcwd
+
+Heads up! LangGraph dev identified a synchronous blocking call in your code. When running in an ASGI web server, blocking calls can degrade performance for everyone since they tie up the event loop.
+
+Here are your options to fix this:
+
+1. Best approach: Convert any blocking code to use async/await patterns
+   For example, use 'await aiohttp.get()' instead of 'requests.get()'
+
+2. Quick fix: Move blocking operations to a separate thread
+   Example: 'await asyncio.to_thread(your_blocking_function)'
+
+3. Override (if you can't change the code):
+   - For development: Run 'langgraph dev --allow-blocking'
+   - For deployment: Set 'BG_JOB_ISOLATED_LOOPS=true' environment variable
+
+These blocking operations can prevent health checks and slow down other runs in your deployment. Following these recommendations will help keep your LangGraph application running smoothly!
+2026-03-24T01:43:47.346490Z [error    ] Run encountered an error in graph: <class 'blockbuster.blockbuster.BlockingError'>(Blocking call to ScandirIterator.__next__
+
+Heads up! LangGraph dev identified a synchronous blocking call in your code. When running in an ASGI web server, blocking calls can degrade performance for everyone since they tie up the event loop.
+
+Here are your options to fix this:
+
+1. Best approach: Convert any blocking code to use async/await patterns
+   For example, use 'await aiohttp.get()' instead of 'requests.get()'
+
+2. Quick fix: Move blocking operations to a separate thread
+   Example: 'await asyncio.to_thread(your_blocking_function)'
+
+3. Override (if you can't change the code):
+   - For development: Run 'langgraph dev --allow-blocking'
+   - For deployment: Set 'BG_JOB_ISOLATED_LOOPS=true' environment variable
+
+These blocking operations can prevent health checks and slow down other runs in your deployment. Following these recommendations will help keep your LangGraph application running smoothly!) [langgraph_api.worker] api_variant=local_dev assistant_id=bee7d354-5df5-5f26-a978-10ea053f620d graph_id=lead_agent langgraph_api_version=0.7.65 request_id=a9332a6c-ce53-41a9-8766-33e9db979e9d run_attempt=1 run_id=019d1d83-2238-7490-995c-519f5f075c93 thread_id=b144ac74-e69a-4ff2-85b8-7d1605ef9583 thread_name=MainThread
+Traceback (most recent call last):
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/langgraph_api/worker.py", line 179, in wrap_user_errors
+    await consume(
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/langgraph_api/stream.py", line 512, in consume
+    raise e
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/langgraph_api/stream.py", line 495, in consume
+    async for mode, payload in stream:
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/langgraph_api/stream.py", line 165, in astream_state
+    graph = await stack.enter_async_context(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sss/.local/share/uv/python/cpython-3.12.9-macos-x86_64-none/lib/python3.12/contextlib.py", line 659, in enter_async_context
+    result = await _enter(cm)
+             ^^^^^^^^^^^^^^^^
+  File "/Users/sss/.local/share/uv/python/cpython-3.12.9-macos-x86_64-none/lib/python3.12/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/langgraph_api/graph.py", line 240, in get_graph
+    value = invoke_factory(value, graph_id, config, server_runtime)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/langgraph_api/_factory_utils.py", line 184, in invoke_factory
+    return value(**graph_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/packages/harness/deerflow/agents/lead_agent/agent.py", line 335, in make_lead_agent
+    system_prompt=apply_prompt_template(subagent_enabled=subagent_enabled, max_concurrent_subagents=max_concurrent_subagents, agent_name=agent_name),
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/packages/harness/deerflow/agents/lead_agent/prompt.py", line 474, in apply_prompt_template
+    skills_section = get_skills_prompt_section(available_skills)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/packages/harness/deerflow/agents/lead_agent/prompt.py", line 376, in get_skills_prompt_section
+    skills = load_skills(enabled_only=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/packages/harness/deerflow/skills/loader.py", line 63, in load_skills
+    for current_root, dir_names, file_names in os.walk(category_path):
+                                               ^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen os>", line 377, in walk
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/blockbuster/blockbuster.py", line 109, in wrapper
+    raise BlockingError(func_name)
+blockbuster.blockbuster.BlockingError: Blocking call to ScandirIterator.__next__
+
+Heads up! LangGraph dev identified a synchronous blocking call in your code. When running in an ASGI web server, blocking calls can degrade performance for everyone since they tie up the event loop.
+
+Here are your options to fix this:
+
+1. Best approach: Convert any blocking code to use async/await patterns
+   For example, use 'await aiohttp.get()' instead of 'requests.get()'
+
+2. Quick fix: Move blocking operations to a separate thread
+   Example: 'await asyncio.to_thread(your_blocking_function)'
+
+3. Override (if you can't change the code):
+   - For development: Run 'langgraph dev --allow-blocking'
+   - For deployment: Set 'BG_JOB_ISOLATED_LOOPS=true' environment variable
+
+These blocking operations can prevent health checks and slow down other runs in your deployment. Following these recommendations will help keep your LangGraph application running smoothly!
+2026-03-24T01:43:47.349050Z [error    ] Background run failed. Exception: <class 'blockbuster.blockbuster.BlockingError'>(Blocking call to ScandirIterator.__next__
+
+Heads up! LangGraph dev identified a synchronous blocking call in your code. When running in an ASGI web server, blocking calls can degrade performance for everyone since they tie up the event loop.
+
+Here are your options to fix this:
+
+1. Best approach: Convert any blocking code to use async/await patterns
+   For example, use 'await aiohttp.get()' instead of 'requests.get()'
+
+2. Quick fix: Move blocking operations to a separate thread
+   Example: 'await asyncio.to_thread(your_blocking_function)'
+
+3. Override (if you can't change the code):
+   - For development: Run 'langgraph dev --allow-blocking'
+   - For deployment: Set 'BG_JOB_ISOLATED_LOOPS=true' environment variable
+
+These blocking operations can prevent health checks and slow down other runs in your deployment. Following these recommendations will help keep your LangGraph application running smoothly!) [langgraph_api.worker] api_variant=local_dev assistant_id=bee7d354-5df5-5f26-a978-10ea053f620d graph_id=lead_agent langgraph_api_version=0.7.65 request_id=a9332a6c-ce53-41a9-8766-33e9db979e9d run_attempt=1 run_completed_in_ms=861 run_created_at=2026-03-24T01:43:46.489038+00:00 run_ended_at=2026-03-24T01:43:47.348705+00:00 run_exec_ms=71 run_id=019d1d83-2238-7490-995c-519f5f075c93 run_started_at=2026-03-24T01:43:47.277224+00:00 run_wait_time_ms=788 thread_id=b144ac74-e69a-4ff2-85b8-7d1605ef9583 thread_name=ThreadPoolExecutor-1_0
+2026-03-24T01:43:47.477449Z [warning  ] Thinking mode is enabled but model 'qwen35_35b' does not support it; fallback to non-thinking mode. [deerflow.agents.lead_agent.agent] api_variant=local_dev langgraph_api_version=0.7.65 method=POST path=/threads/{thread_id}/history request_id=97ab76c8-b9f9-4169-96c7-1525ca5c6f96 thread_name=MainThread
+2026-03-24T01:43:47.477776Z [info     ] Create Agent(default) -> thinking_enabled: False, reasoning_effort: None, model_name: qwen35_35b, is_plan_mode: False, subagent_enabled: False, max_concurrent_subagents: 3 [deerflow.agents.lead_agent.agent] api_variant=local_dev langgraph_api_version=0.7.65 method=POST path=/threads/{thread_id}/history request_id=97ab76c8-b9f9-4169-96c7-1525ca5c6f96 thread_name=MainThread
+2026-03-24T01:43:47.479242Z [info     ] Including view_image_tool for model 'qwen35_35b' (supports_vision=True) [deerflow.tools.tools] api_variant=local_dev langgraph_api_version=0.7.65 method=POST path=/threads/{thread_id}/history request_id=97ab76c8-b9f9-4169-96c7-1525ca5c6f96 thread_name=MainThread
+2026-03-24T01:43:47.480133Z [info     ] Total tools loaded: 8, built-in tools: 3, MCP tools: 0 [deerflow.tools.tools] api_variant=local_dev langgraph_api_version=0.7.65 method=POST path=/threads/{thread_id}/history request_id=97ab76c8-b9f9-4169-96c7-1525ca5c6f96 thread_name=MainThread
+Failed to load memory context: Blocking call to os.getcwd
+
+Heads up! LangGraph dev identified a synchronous blocking call in your code. When running in an ASGI web server, blocking calls can degrade performance for everyone since they tie up the event loop.
+
+Here are your options to fix this:
+
+1. Best approach: Convert any blocking code to use async/await patterns
+   For example, use 'await aiohttp.get()' instead of 'requests.get()'
+
+2. Quick fix: Move blocking operations to a separate thread
+   Example: 'await asyncio.to_thread(your_blocking_function)'
+
+3. Override (if you can't change the code):
+   - For development: Run 'langgraph dev --allow-blocking'
+   - For deployment: Set 'BG_JOB_ISOLATED_LOOPS=true' environment variable
+
+These blocking operations can prevent health checks and slow down other runs in your deployment. Following these recommendations will help keep your LangGraph application running smoothly!
+2026-03-24T01:43:47.612238Z [error    ] POST /threads/b144ac74-e69a-4ff2-85b8-7d1605ef9583/history 500 136ms [langgraph_api.server] api_variant=local_dev langgraph_api_version=0.7.65 latency_ms=136 method=POST path=/threads/{thread_id}/history path_params={'thread_id': 'b144ac74-e69a-4ff2-85b8-7d1605ef9583'} proto=1.1 query_string= req_header={} request_id=97ab76c8-b9f9-4169-96c7-1525ca5c6f96 res_header={} route=/threads/{thread_id}/history status=500 thread_name=MainThread
+2026-03-24T01:43:47.613867Z [error    ] Exception in ASGI application
+ [uvicorn.error] api_variant=local_dev langgraph_api_version=0.7.65 thread_name=MainThread
+Traceback (most recent call last):
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/uvicorn/protocols/http/httptools_impl.py", line 416, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 191, in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+                                   ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sss/.local/share/uv/python/cpython-3.12.9-macos-x86_64-none/lib/python3.12/contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+    raise exc
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/langgraph_api/middleware/private_network.py", line 50, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/langgraph_api/middleware/http_logger.py", line 80, in __call__
+    raise exc
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/langgraph_api/middleware/http_logger.py", line 74, in __call__
+    await self.app(scope, inner_receive, inner_send)
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/langgraph_api/middleware/request_id.py", line 35, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/starlette/routing.py", line 462, in handle
+    await self.app(scope, receive, send)
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/langgraph_api/auth/middleware.py", line 53, in __call__
+    return await super().__call__(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/starlette/middleware/authentication.py", line 48, in __call__
+    await self.app(scope, receive, send)
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/langgraph_api/route.py", line 166, in handle
+    return await super().handle(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/langgraph_api/route.py", line 57, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/langgraph_api/route.py", line 50, in app
+    response: ASGIApp = await func(request)
+                        ^^^^^^^^^^^^^^^^^^^
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/langgraph_runtime_inmem/retry.py", line 27, in wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/langgraph_api/api/threads.py", line 369, in get_thread_history_post
+    for c in await Threads.State.list(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/langgraph_runtime_inmem/ops.py", line 1877, in list
+    async with get_graph(
+               ^^^^^^^^^^
+  File "/Users/sss/.local/share/uv/python/cpython-3.12.9-macos-x86_64-none/lib/python3.12/contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/langgraph_api/graph.py", line 240, in get_graph
+    value = invoke_factory(value, graph_id, config, server_runtime)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/langgraph_api/_factory_utils.py", line 184, in invoke_factory
+    return value(**graph_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/packages/harness/deerflow/agents/lead_agent/agent.py", line 335, in make_lead_agent
+    system_prompt=apply_prompt_template(subagent_enabled=subagent_enabled, max_concurrent_subagents=max_concurrent_subagents, agent_name=agent_name),
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/packages/harness/deerflow/agents/lead_agent/prompt.py", line 474, in apply_prompt_template
+    skills_section = get_skills_prompt_section(available_skills)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/packages/harness/deerflow/agents/lead_agent/prompt.py", line 376, in get_skills_prompt_section
+    skills = load_skills(enabled_only=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/packages/harness/deerflow/skills/loader.py", line 63, in load_skills
+    for current_root, dir_names, file_names in os.walk(category_path):
+                                               ^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen os>", line 377, in walk
+  File "/Users/sss/devprog/devprog_sss/AI_prog/deer-flow-main/backend/.venv/lib/python3.12/site-packages/blockbuster/blockbuster.py", line 109, in wrapper
+    raise BlockingError(func_name)
+blockbuster.blockbuster.BlockingError: Blocking call to ScandirIterator.__next__
+
+Heads up! LangGraph dev identified a synchronous blocking call in your code. When running in an ASGI web server, blocking calls can degrade performance for everyone since they tie up the event loop.
+
+Here are your options to fix this:
+
+1. Best approach: Convert any blocking code to use async/await patterns
+   For example, use 'await aiohttp.get()' instead of 'requests.get()'
+
+2. Quick fix: Move blocking operations to a separate thread
+   Example: 'await asyncio.to_thread(your_blocking_function)'
+
+3. Override (if you can't change the code):
+   - For development: Run 'langgraph dev --allow-blocking'
+   - For deployment: Set 'BG_JOB_ISOLATED_LOOPS=true' environment variable
+
+These blocking operations can prevent health checks and slow down other runs in your deployment. Following these recommendations will help keep your LangGraph application running smoothly!

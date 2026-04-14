@@ -63,7 +63,12 @@ class Paths:
         if env_home := os.getenv("DEER_FLOW_HOME"):
             return Path(env_home).resolve()
 
-        cwd = Path.cwd()
+        try:
+            cwd = Path.cwd()
+        except Exception:
+            cwd_str = os.environ.get("PWD")
+            cwd = Path(cwd_str) if cwd_str else Path(".")
+
         if cwd.name == "backend" or (cwd / "pyproject.toml").exists():
             return cwd / ".deer-flow"
 

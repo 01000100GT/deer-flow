@@ -106,7 +106,8 @@ class LoopDetectionMiddleware(AgentMiddleware[AgentState]):
 
     def _get_thread_id(self, runtime: Runtime) -> str:
         """Extract thread_id from runtime context for per-thread tracking."""
-        thread_id = runtime.context.get("thread_id")
+        context = getattr(runtime, "context", {}) or {}
+        thread_id = context.get("thread_id")
         if thread_id:
             return thread_id
         return "default"

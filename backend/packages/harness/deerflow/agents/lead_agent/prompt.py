@@ -345,23 +345,29 @@ def _get_memory_context(agent_name: str | None = None) -> str:
         Formatted memory context string wrapped in XML tags, or empty string if disabled.
     """
     try:
-        from deerflow.agents.memory import format_memory_for_injection, get_memory_data
-        from deerflow.config.memory_config import get_memory_config
+        import concurrent.futures
 
-        config = get_memory_config()
-        if not config.enabled or not config.injection_enabled:
-            return ""
+        def _inner():
+            from deerflow.agents.memory import format_memory_for_injection, get_memory_data
+            from deerflow.config.memory_config import get_memory_config
 
-        memory_data = get_memory_data(agent_name)
-        memory_content = format_memory_for_injection(memory_data, max_tokens=config.max_injection_tokens)
+            config = get_memory_config()
+            if not config.enabled or not config.injection_enabled:
+                return ""
 
-        if not memory_content.strip():
-            return ""
+            memory_data = get_memory_data(agent_name)
+            memory_content = format_memory_for_injection(memory_data, max_tokens=config.max_injection_tokens)
 
-        return f"""<memory>
+            if not memory_content.strip():
+                return ""
+
+            return f"""<memory>
 {memory_content}
 </memory>
 """
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            return executor.submit(_inner).result()
     except Exception as e:
         print(f"Failed to load memory context: {e}")
         return ""

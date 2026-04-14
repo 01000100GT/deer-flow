@@ -59,19 +59,20 @@ class AppConfig(BaseModel):
             return path
         else:
             # Avoid using os.getcwd() directly in LangGraph runtime to prevent blocking ASGI event loop
-            import asyncio
+            # Use __file__ to deduce the absolute path without any blocking system calls
             try:
-                # If we are in an active event loop, we shouldn't block it.
-                # However, resolve_config_path is synchronous. We can use a fast fallback or absolute path
-                # Path.cwd() is generally fine, but blockbuster intercepts os.getcwd.
-                cwd = Path(".").resolve()
+                # __file__ is typically an absolute path in ASGI servers.
+                # deerflow/config/app_config.py -> 5 levels up to backend/
+                cwd = Path(__file__).parent.parent.parent.parent.parent
             except Exception:
-                cwd = Path(os.getcwd())
-                
-            # Check if the config.yaml is in the current directory
+                # Ultimate fallback to PWD environment variable
+                cwd_str = os.environ.get("PWD")
+                cwd = Path(cwd_str) if cwd_str else Path(".")
+
+            # Check if the config.yaml is in the deduced directory
             path = cwd / "config.yaml"
             if not path.exists():
-                # Check if the config.yaml is in the parent directory of CWD
+                # Check if the config.yaml is in the parent directory of deduced directory
                 path = cwd.parent / "config.yaml"
                 if not path.exists():
                     raise FileNotFoundError("`config.yaml` file not found at the current directory nor its parent directory")

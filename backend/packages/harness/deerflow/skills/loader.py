@@ -36,63 +36,77 @@ def load_skills(skills_path: Path | None = None, use_config: bool = True, enable
     Returns:
         List of Skill objects, sorted by name
     """
-    if skills_path is None:
-        if use_config:
-            try:
-                from deerflow.config import get_app_config
+    import concurrent.futures
 
-                config = get_app_config()
-                skills_path = config.skills.get_skills_path()
-            except Exception:
-                # Fallback to default if config fails
+    def _inner_load():
+        nonlocal skills_path
+        if skills_path is None:
+            if use_config:
+                try:
+                    from deerflow.config import get_app_config
+
+                    config = get_app_config()
+                    skills_path = config.skills.get_skills_path()
+                except Exception:
+                    # Fallback to default if config fails
+                    skills_path = get_skills_root_path()
+            else:
                 skills_path = get_skills_root_path()
-        else:
-            skills_path = get_skills_root_path()
 
-    if not skills_path.exists():
-        return []
+        if not skills_path.exists():
+            return []
 
-    skills = []
+        skills = []
 
-    # Scan public and custom directories
-    for category in ["public", "custom"]:
-        category_path = skills_path / category
-        if not category_path.exists() or not category_path.is_dir():
-            continue
-
-        for current_root, dir_names, file_names in os.walk(category_path):
-            # Keep traversal deterministic and skip hidden directories.
-            dir_names[:] = sorted(name for name in dir_names if not name.startswith("."))
-            if "SKILL.md" not in file_names:
+        # Scan public and custom directories
+        for category in ["public", "custom"]:
+            category_path = skills_path / category
+            if not category_path.exists() or not category_path.is_dir():
                 continue
 
-            skill_file = Path(current_root) / "SKILL.md"
-            relative_path = skill_file.parent.relative_to(category_path)
+            # Use os.walk but collect paths to avoid blocking generator issues
+            try:
+                walk_results = list(os.walk(category_path))
+            except Exception:
+                continue
 
-            skill = parse_skill_file(skill_file, category=category, relative_path=relative_path)
-            if skill:
-                skills.append(skill)
+            for current_root, dir_names, file_names in walk_results:
+                # Keep traversal deterministic and skip hidden directories.
+                dir_names[:] = sorted(name for name in dir_names if not name.startswith("."))
+                if "SKILL.md" not in file_names:
+                    continue
 
-    # Load skills state configuration and update enabled status
-    # NOTE: We use ExtensionsConfig.from_file() instead of get_extensions_config()
-    # to always read the latest configuration from disk. This ensures that changes
-    # made through the Gateway API (which runs in a separate process) are immediately
-    # reflected in the LangGraph Server when loading skills.
-    try:
-        from deerflow.config.extensions_config import ExtensionsConfig
+                skill_file = Path(current_root) / "SKILL.md"
+                relative_path = skill_file.parent.relative_to(category_path)
 
-        extensions_config = ExtensionsConfig.from_file()
-        for skill in skills:
-            skill.enabled = extensions_config.is_skill_enabled(skill.name, skill.category)
-    except Exception as e:
-        # If config loading fails, default to all enabled
-        print(f"Warning: Failed to load extensions config: {e}")
+                skill = parse_skill_file(skill_file, category=category, relative_path=relative_path)
+                if skill:
+                    skills.append(skill)
 
-    # Filter by enabled status if requested
-    if enabled_only:
-        skills = [skill for skill in skills if skill.enabled]
+        # Load skills state configuration and update enabled status
+        # NOTE: We use ExtensionsConfig.from_file() instead of get_extensions_config()
+        # to always read the latest configuration from disk. This ensures that changes
+        # made through the Gateway API (which runs in a separate process) are immediately
+        # reflected in the LangGraph Server when loading skills.
+        try:
+            from deerflow.config.extensions_config import ExtensionsConfig
 
-    # Sort by name for consistent ordering
-    skills.sort(key=lambda s: s.name)
+            extensions_config = ExtensionsConfig.from_file()
+            for skill in skills:
+                skill.enabled = extensions_config.is_skill_enabled(skill.name, skill.category)
+        except Exception as e:
+            # If config loading fails, default to all enabled
+            print(f"Warning: Failed to load extensions config: {e}")
 
-    return skills
+        # Filter by enabled status if requested
+        if enabled_only:
+            skills = [skill for skill in skills if skill.enabled]
+
+        # Sort by name for consistent ordering
+        skills.sort(key=lambda s: s.name)
+
+        return skills
+
+    # Run the blocking logic in a thread to bypass blockbuster intercepts in ASGI loops
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        return executor.submit(_inner_load).result()
